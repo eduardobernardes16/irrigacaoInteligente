@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: nats
+  namespace: irrigacao
+spec:
+  serviceName: nats
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nats
+  template:
+    metadata:
+      labels:
+        app: nats
+    spec:
+      containers:
+      - name: nats
+        image: nats:2.10-alpine
+        command:
+        - nats-server
+        - "--js"          # habilita JetStream
+        - "--sd"
+        - "/data"          # diretório de armazenamento JetStream
+        - "-m"
+        - "8222"
+        ports:
+        - containerPort: 4222
+          name: client
+        - containerPort: 8222
+          name: monitoring
+        volumeMounts:
+        - name: nats-storage
+          mountPath: /data
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8222
+          initialDelaySeconds: 5
+  volumeClaimTemplates:
+  - metadata:
+      name: nats-storage
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nats
+  namespace: irrigacao
+spec:
+  clusterIP: None       # Headless para StatefulSet
+  selector:
+    app: nats
+  ports:
+  - name: client
+    port: 4222
+  - name: monitoring
+    port: 8222
+
+    

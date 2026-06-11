@@ -1,0 +1,81 @@
+services:
+
+  # NATS com JetStream: -js habilita persistência
+  nats:
+    image: nats:2.10-alpine
+    command:
+      - "--js"
+      - "--sd"
+      - "/data"
+      - "-m"
+      - "8222"
+
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+
+    volumes:
+      - nats_data:/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8222/healthz || exit 1"]
+      interval: 5s
+      retries: 5
+
+  influxdb:
+    image: influxdb:2.7
+    ports:
+      - "8086:8086"
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: admin
+      DOCKER_INFLUXDB_INIT_PASSWORD: adminpass123
+      DOCKER_INFLUXDB_INIT_ORG: fazenda
+      DOCKER_INFLUXDB_INIT_BUCKET: irrigation
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: irrigacao-token
+      DOCKER_INFLUXDB_INIT_RETENTION: 30d
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+    healthcheck:
+      test: ["CMD", "influx", "ping"]
+      interval: 10s
+      retries: 8
+
+  worker-decisao:
+    build: ./worker-decisao
+    environment:
+      NATS_URL: nats://nats:4222
+      INFLUX_URL: http://influxdb:8086
+      INFLUX_TOKEN: irrigacao-token
+      INFLUX_ORG: fazenda
+      INFLUX_BUCKET: irrigation
+      MOISTURE_THRESHOLD: "30.0"
+    depends_on:
+      nats:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
+
+  gerador-sensores:
+    build: ./gerador-sensores
+    environment:
+      NATS_URL: nats://nats:4222
+      RAIN_FORECAST: "false"
+    depends_on:
+      nats:
+        condition: service_healthy
+
+  grafana:
+    image: grafana/grafana:10.3.0
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./grafana/datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
+    depends_on:
+      - influxdb
+
+volumes:
+  nats_data:
+  influxdb_data:

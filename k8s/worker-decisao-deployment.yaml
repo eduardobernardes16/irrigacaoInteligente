@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker-decisao
+  namespace: irrigacao
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker-decisao
+  template:
+    metadata:
+      labels:
+        app: worker-decisao
+    spec:
+      containers:
+      - name: worker-decisao
+        image: worker-irrigacao:latest
+        imagePullPolicy: Never
+        env:
+        - name: NATS_URL
+          value: nats://nats:4222
+        - name: INFLUX_URL
+          value: http://influxdb:8086
+        - name: INFLUX_TOKEN
+          value: irrigacao-token
+        - name: INFLUX_ORG
+          value: fazenda
+        - name: INFLUX_BUCKET
+          value: irrigation
+        - name: MOISTURE_THRESHOLD
+          value: "30.0"
+---
+# Gerador de sensores: sem Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gerador-sensores
+  namespace: irrigacao
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gerador-sensores
+  template:
+    metadata:
+      labels:
+        app: gerador-sensores
+    spec:
+      containers:
+      - name: gerador-sensores
+        image: gerador-irrigacao:latest
+        imagePullPolicy: Never
+        env:
+        - name: NATS_URL
+          value: nats://nats:4222
+        - name: RAIN_FORECAST
+          value: "false"
