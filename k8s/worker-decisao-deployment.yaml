@@ -55,4 +55,4 @@ spec:
         - name: NATS_URL
           value: nats://nats:4222
         - name: RAIN_FORECAST
-          value: "false"
+          value: "true"

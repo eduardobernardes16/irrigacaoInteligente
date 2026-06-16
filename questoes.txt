@@ -1,0 +1,20 @@
+1. Qual a diferença entre NATS core e NATS JetStream? Por que JetStream é mais adequado para sensores de irrigação do que o NATS core (pub/sub simples)?
+
+A prinicipal diferença é que o Nat Core só envia mensagens enquanto houver um usuário conectado,
+já o Nat JetStream não precisa ele tem persistência e histórico, em caso de falha ele tenta um redeploy, por conta disso ele é mais indicado
+para sistemas de irrigação, já que o monitoramento é automático, tem persistência caso o sistema caia e histórico de mensagens.
+
+2. O sistema decide automaticamente irrigar com base nos dados do sensor. Que responsabilidade o worker tem 
+se o sensor enviar um dado claramente errado (ex: moisture_pct = -50 ou moisture_pct = 200)? Como o worker toma as decisões, ele teria que 
+validar os dados, para saber se uma leitura está dentro do esperado ou não, seria prudente inserir um limiar para reconhecer leituras 
+erradas.
+
+3.Por que usar InfluxDB em vez de Postgres para armazenar o histórico de umidade do solo? O que significa "retention policy"
+e por que 30 dias é uma escolha razoável para esse sistema? Porque o InfluxDB é um banco de dados feito para monitoramento de dados, ele
+é ajustado para receber leituras em séries temporais, oferece boa escalabilidade, bom desempenho para esse tipo de leitura, sendo a escolha ideal. O 
+Postgres poderia ser usado também, porém teria de ser configurado para isso, porém não seria a escolha mais otimizada.
+A retention policy se refere a quanto tempo os dados ficarão armazenados dentro do banco, visto que, pode haver centenas ou milhares de
+leituras por dia.
+30 dias é um tempo razoavel, pois permite analisar leituras recentes, além de possibilitar backups mensais dos dados do banco para a nuvem
+ou um armazenamento físico, assim dados não são perdidos e o banco tem seu crescimento controlado, mantendo desempenho.
+

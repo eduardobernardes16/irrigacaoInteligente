@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: status-api
+  namespace: irrigacao
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: status-api
+
+  template:
+    metadata:
+      labels:
+        app: status-api
+
+    spec:
+      containers:
+      - name: status-api
+        image: status-api:v1
+
+        imagePullPolicy: IfNotPresent
+
+        ports:
+        - containerPort: 5000
+
+        env:
+        - name: INFLUX_URL
+          value: "http://influxdb:8086"
+
+        - name: INFLUX_TOKEN
+          value: "irrigacao-token"
+
+        - name: INFLUX_ORG
+          value: "fazenda"
+
+        - name: INFLUX_BUCKET
+          value: "irrigation"
